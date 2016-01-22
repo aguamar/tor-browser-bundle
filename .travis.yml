@@ -1,0 +1,28 @@
+language: bash
+dist: trusty
+# can't use travis' new infrastructure (which doesn't allow `sudo` because vagrant needs to be installed with `dpkg`)
+before_script:
+- wget https://releases.hashicorp.com/vagrant/1.8.1/vagrant_1.8.1_x86_64.deb && sudo dpkg -i vagrant_1.8.1_x86_64.deb
+- sudo apt-get update
+- sudo apt-get install tor
+# avoid `AppArmor parser error for /etc/apparmor.d/lxc-containers in /etc/apparmor.d/lxc-containers at line 5: Could not open 'tunables/global'` during `dpkg` for `lxc` (use `yes` command because `apt-get --yes` might have no effect of `dpkg`) (`apparmor` issue reported as https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/969228)
+# removing `postgresql` in order to avoid `Refused to start PostgreSQL 9.4, because PostgreSQL 9.1 is currently running! You should first stop 9.1 instance...` (stopping service `postgresql` and `sudo apt-get remove postgresql` don't help - yes this doesn't make sense and sucks)
+# - yes | sudo apt-get remove postgresql-9.1
+# - yes | sudo apt-get upgrade
+# - yes | sudo apt-get upgrade apparmor
+- git clone https://git.torproject.org/torsocks.git && cd torsocks && ./autogen.sh && ./configure && make -j && sudo make install && cd ..
+    # avoid `libtorsocks(4279): WARNING: The symbol res_send() was not found in any shared library with the reported error: Not Found!`
+- sudo apt-get install ruby apache2 git apt-cacher-ng qemu-kvm virt-what lxc lxctl fakeroot faketime zip unzip subversion debian-archive-keyring curl pkg-config libgtk2.0-dev libglib2.0-dev python-vm-builder libparallel-forkmanager-perl
+     # `python-vm-builder` and `libparallel-forkmanager-perl` aren't listed in the error message, but are necessary
+# prerequisites for gitian build
+- sudo apt-get install libyaml-perl libfile-slurp-perl libxml-writer-perl libio-captureoutput-perl libfile-which-perl libxml-libxml-perl
+- git clone -b tor-browser-builder-3 https://git.torproject.org/builders/gitian-builder.git ../gitian-builder
+- wget http://download.virtualbox.org/virtualbox/5.1.26/virtualbox-5.1_5.1.26-117224~Ubuntu~zesty_amd64.deb && (sudo dpkg -i virtualbox-5.1_5.1.26-117224~Ubuntu~zesty_amd64.deb || /bin/true) && sudo apt-get install -f
+    # avoid `No usable default provider could be found for your system.` when building with `vagrant`
+    # installation fails at first because of missing dependencies which are then fixed with `apt-get install -f`
+script:
+- cd gitian
+- make -j alpha USE_LXC=1 TORSOCKS=
+    # need to use `alpha` to build on master
+- cd .. && cd vagrant
+- make -j TORSOCKS=
