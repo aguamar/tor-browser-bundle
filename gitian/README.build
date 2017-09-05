@@ -1,3 +1,16 @@
+A DEVELOPMENT NOTE:
+===================
+
+Developing the reproducible builds environment for Tor Browser with
+gitian/tor-browser-bundle is deprecated. Recently, we switched to
+rbm/tor-browser-build. See:
+https://trac.torproject.org/projects/tor/ticket/23213. To get started with the
+new system, check out
+https://git.torproject.org/builders/tor-browser-build.git and follow the
+instructions in the README file.
+
+-------------------
+
 QuickStart:
 
  On an Ubuntu 14.04+/Debian Wheezy+ machine or VM, run:
